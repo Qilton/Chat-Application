@@ -12,9 +12,25 @@ const Home = () => {
   const [isConnected, setIsConnected] = useState(socket.connected);
   const [fooEvents, setFooEvents] = useState([]);
   const [messages, setMessages] = useState([]);
+  const[users,setUsers]=useState([])
   const navigate = useNavigate();
  
   useEffect(() => {
+    async function users(){
+      const loggedInUser = localStorage.getItem('loggedInUser');
+      console.log(loggedInUser)
+    const res=await fetch('http://localhost:3000/users/all', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }})
+        const data=await res.json()
+        console.log(data)
+        const filteredUsers = data.filter(user => user.name !== loggedInUser);
+        setUsers(filteredUsers)
+       
+    }
     function onConnect() {
       setIsConnected(true);
     }
@@ -51,11 +67,13 @@ const Home = () => {
       }
     };
     onMessage()
+    users()
     return () => {
       socket.off('connect', onConnect);
       socket.off('disconnect', onDisconnect);
       socket.off('foo', onFooEvent);
     };
+    
   }, []);
 
 
@@ -72,6 +90,13 @@ const Home = () => {
       <ToastContainer />
       <ConnectionState isConnected={isConnected} />
       <div className="flex flex-1">
+            <div className='w-[20vw] overflow-y-auto bg-white shadow-md rounded-md p-4 mb-4'>
+              <h2 className='font-semibold text-lg'>Users</h2>
+              <ul>
+                {users.map((user,index)=>(
+                  <li className='text-md border p-2 rounded-md shadow-md m-2 cursor-pointer' key={index}>{user.name}</li>
+                ))}</ul>
+            </div>
         <div className="flex-1 flex flex-col p-4">
           <div className="flex-1 overflow-y-auto bg-white shadow-md rounded-md p-4 mb-4">
             <h2 className="text-lg font-semibold">Chat</h2>

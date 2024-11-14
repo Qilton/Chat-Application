@@ -5,7 +5,7 @@ const http = require('http');
 const { Server } = require('socket.io');
 const AuthRouter=require('./routes/AuthRouter')
 const Message = require('./models/message');
-
+const UserRouter=require('./routes/UserRouter')
 require('dotenv').config()
 require('./models/db')
 app.use(cors(
@@ -16,6 +16,7 @@ app.use(cors(
 ));
 app.use(express.json());
 app.use('/auth',AuthRouter)
+app.use('/users',UserRouter)
 
 // Setup for express and socket.io
 const server = http.createServer(app);
@@ -33,6 +34,22 @@ io.on('connection', (socket) => {
     socket.on('disconnect', () => {
         console.log('A user disconnected');
     });
+    
+
+    socket.on('joinRoom', ({ roomId, username }) => {
+        socket.join(roomId);
+        console.log(`${username} joined room: ${roomId}`);
+        
+        // Optionally send a message to other users in the room
+        socket.to(roomId).emit('userJoined', `${username} has joined the room`);
+    });
+
+    // Listen for a message in the room
+    socket.on('privateMessage', ({ roomId, message, sender }) => {
+        // Send the message to all users in the room
+        io.to(roomId).emit('message', { message, sender });
+    });
+
     
     socket.on('create-something', async (data, callback) => {
         try {
